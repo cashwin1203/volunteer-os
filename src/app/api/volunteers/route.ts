@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { maskVolunteerPII, logSecurityAudit } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +9,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const centerId = searchParams.get('centerId');
     const status = searchParams.get('status');
+    const maskPII = searchParams.get('mask') === 'true';
 
     const where: any = {};
     if (centerId) where.centerId = centerId;
@@ -26,7 +28,9 @@ export async function GET(req: Request) {
       orderBy: { name: 'asc' },
     });
 
-    return NextResponse.json(volunteers);
+    const output = maskPII ? volunteers.map(maskVolunteerPII) : volunteers;
+
+    return NextResponse.json(output);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -42,12 +46,15 @@ export async function POST(req: Request) {
         name,
         email,
         phone: phone || '',
+        whatsappPhone: phone || '',
         role: role || 'VOLUNTEER',
         status: 'ACTIVE',
         skills: skills || 'Teaching, General',
         centerId: centerId || null,
       },
     });
+
+    await logSecurityAudit('ADMIN', 'ONBOARD_VOLUNTEER', { volunteerName: name, email });
 
     return NextResponse.json(volunteer, { status: 201 });
   } catch (error: any) {
@@ -68,6 +75,8 @@ export async function PATCH(req: Request) {
         ...(centerId !== undefined && { centerId }),
       },
     });
+
+    await logSecurityAudit('ADMIN', 'UPDATE_VOLUNTEER_STATUS', { id, status, role });
 
     return NextResponse.json(updated);
   } catch (error: any) {

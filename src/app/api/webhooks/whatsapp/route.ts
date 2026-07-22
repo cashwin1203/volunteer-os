@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyWhatsAppSignature, logSecurityAudit } from '@/lib/security';
+import { verifyWhatsAppSignature, logSecurityAudit, sanitizeInputText } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,14 +11,21 @@ export async function GET(req: Request) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
-  if (mode === 'subscribe' && token === 'VOLUNTEER_OS_WA_TOKEN') {
+  const expectedToken = process.env.META_WA_VERIFY_TOKEN || (process.env.NODE_ENV !== 'production' ? 'VOLUNTEER_OS_WA_TOKEN' : null);
+
+  if (!expectedToken) {
+    console.error('FATAL: META_WA_VERIFY_TOKEN is missing in production environment.');
+    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
+  }
+
+  if (mode === 'subscribe' && token === expectedToken) {
     return new Response(challenge, { status: 200 });
   }
 
   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 }
 
-// POST Webhook handler with HMAC SHA-256 signature verification and audit logging
+// POST Webhook handler with HMAC SHA-256 signature verification, input capping, and audit logging
 export async function POST(req: Request) {
   try {
     const rawBody = await req.text();
@@ -35,10 +42,10 @@ export async function POST(req: Request) {
 
     const body = JSON.parse(rawBody);
 
-    // Extract message fields
+    // Extract and sanitize message fields
     const volunteerId = body.volunteerId;
     const action = body.action;
-    const textContent = body.text;
+    const textContent = sanitizeInputText(body.text, 1000); // Enforce 1,000 char cap
 
     // Find active volunteer
     const volunteer = await prisma.volunteer.findFirst({

@@ -12,7 +12,6 @@ export function verifyWhatsAppSignature(rawBody: string, signatureHeader: string
 
   const appSecret = process.env.META_APP_SECRET;
   if (!appSecret || !signatureHeader) {
-    // Fail secure in production if secret or signature is missing
     return process.env.NODE_ENV !== 'production';
   }
 
@@ -26,6 +25,30 @@ export function verifyWhatsAppSignature(rawBody: string, signatureHeader: string
   } catch {
     return false;
   }
+}
+
+/**
+ * Masks Volunteer PII for non-admin API responses
+ */
+export function maskVolunteerPII(volunteer: any) {
+  if (!volunteer) return volunteer;
+  return {
+    ...volunteer,
+    phone: volunteer.phone ? volunteer.phone.replace(/(\+\d{2}\s?\d{2})\d{5}(\d{3})/, '$1*****$2') : null,
+    whatsappPhone: volunteer.whatsappPhone ? volunteer.whatsappPhone.replace(/(\+\d{2}\s?\d{2})\d{5}(\d{3})/, '$1*****$2') : null,
+    email: volunteer.email ? volunteer.email.replace(/(.{2})(.*)(?=@)/, (g1, g2, g3) => g2 + '*'.repeat(g3.length)) : null,
+  };
+}
+
+/**
+ * Sanitizes input text to prevent prompt injection and XSS
+ */
+export function sanitizeInputText(input: string | null | undefined, maxLength: number = 1000): string {
+  if (!input) return '';
+  return input
+    .replace(/[<>]/g, '') // Strip XML/HTML tags
+    .slice(0, maxLength)
+    .trim();
 }
 
 /**
