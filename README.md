@@ -1,4 +1,4 @@
-# Volunteer OS 🚀
+# Volunteer OS
 
 **The Operating System for Volunteer-Led NGO Learning Centers**
 
@@ -6,27 +6,27 @@ Volunteer OS is an end-to-end operational platform built for education-focused N
 
 ---
 
-## ✨ Features
+## Features
 
-- **📱 WhatsApp Conversational Bot:**
-  - Automated Friday RSVP pings with 1-tap buttons (`[ ✅ Attending ]`, `[ ❌ Request Absence ]`, `[ 🔄 Standby Backup ]`).
-  - 1-tap Saturday center check-in (`[ 📍 Check In Now ]`).
+- **WhatsApp Conversational Bot:**
+  - Automated Friday RSVP pings with 1-tap buttons (`[ Attending ]`, `[ Request Absence ]`, `[ Standby Backup ]`).
+  - 1-tap Saturday center check-in (`[ Check In Now ]`).
   - Conversational text session logging.
   - Text `/status` for instant center roster attendance.
-- **🌴 Center Coordinator Console:**
+- **Center Coordinator Console:**
   - 1-click **"Pause RSVPs for Holiday"** toggle to suspend automated alerts during vacation weeks.
   - Real-time Saturday slot roster management.
   - Educational logbook & student support tracker.
-- **🛡️ Chapter Leader Executive Dashboard:**
+- **Chapter Leader Executive Dashboard:**
   - Real-time active volunteer retention radar across city centers (Vihana, Mala, Ramamurthynagar).
   - Retention Risk Watchlist (flags volunteers missing 2+ consecutive sessions).
   - **AI Impact Copilot:** Generates executive impact reports for corporate CSR & donor grants.
-- **💻 Interactive WhatsApp Web Simulator:**
+- **Interactive WhatsApp Web Simulator:**
   - Live in-app mobile phone mockup for instant browser testing without Meta API keys.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Framework:** Next.js 14 (App Router) + TypeScript
 - **Database & ORM:** SQLite with Prisma ORM
@@ -35,7 +35,7 @@ Volunteer OS is an end-to-end operational platform built for education-focused N
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 1. **Clone the repository:**
    ```bash
@@ -62,7 +62,7 @@ Volunteer OS is an end-to-end operational platform built for education-focused N
 
 ---
 
-## 📄 Documentation
+## Documentation
 
 - [Product Requirements Document (PRD)](https://github.com/cashwin1203/volunteer-os)
 - [Product Case Study](https://github.com/cashwin1203/volunteer-os)
@@ -70,7 +70,7 @@ Volunteer OS is an end-to-end operational platform built for education-focused N
 
 ---
 
-## 🌐 100% Free Production Deployment
+## 100% Free Production Deployment
 
 - **Hosting:** Vercel Hobby Tier (Free)
 - **Database:** Turso Edge SQLite / Supabase (Free Tier)
