@@ -4,7 +4,6 @@ import { verifyWhatsAppSignature, logSecurityAudit, sanitizeInputText } from '@/
 
 export const dynamic = 'force-dynamic';
 
-// Meta Verification challenge for webhook setup
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const mode = searchParams.get('hub.mode');
@@ -25,7 +24,6 @@ export async function GET(req: Request) {
   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 }
 
-// POST Webhook handler with HMAC SHA-256 signature verification, input capping, and audit logging
 export async function POST(req: Request) {
   try {
     const rawBody = await req.text();
@@ -42,12 +40,10 @@ export async function POST(req: Request) {
 
     const body = JSON.parse(rawBody);
 
-    // Extract and sanitize message fields
     const volunteerId = body.volunteerId;
     const action = body.action;
-    const textContent = sanitizeInputText(body.text, 1000); // Enforce 1,000 char cap
+    const textContent = sanitizeInputText(body.text, 1000);
 
-    // Find active volunteer
     const volunteer = await prisma.volunteer.findFirst({
       where: volunteerId ? { id: volunteerId } : { email: 'ashwin@uandi.org' },
       include: { center: true },
@@ -57,11 +53,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ reply: 'Sorry, your WhatsApp number is not registered in Volunteer OS.' });
     }
 
-    // Find active session
     const session = await prisma.session.findFirst({
       where: { centerId: volunteer.centerId || '', status: { in: ['UPCOMING', 'COMPLETED'] } },
       orderBy: { sessionDate: 'desc' },
-      include: { volunteerAttendances: true },
+      include: { volunteerAttendances: { include: { volunteer: true } } },
     });
 
     if (!session) {
@@ -70,8 +65,8 @@ export async function POST(req: Request) {
 
     const attendance = session.volunteerAttendances.find((a) => a.volunteerId === volunteer.id);
 
-    // 1. Process RSVP Actions
-    if (action === 'RSVP_ATTENDING') {
+    // 1. RSVP Attending
+    if (action === 'RSVP_ATTENDING' || action === 'ACCEPT_BACKUP') {
       if (attendance) {
         await prisma.volunteerAttendance.update({
           where: { id: attendance.id },
@@ -90,6 +85,7 @@ export async function POST(req: Request) {
       });
     }
 
+    // 2. RSVP Absent -> Triggers Automated Standby Escalation
     if (action === 'RSVP_ABSENT') {
       if (attendance) {
         await prisma.volunteerAttendance.update({
@@ -98,18 +94,29 @@ export async function POST(req: Request) {
         });
       }
 
-      await logSecurityAudit(volunteer.name, 'WHATSAPP_RSVP_ABSENT', {
+      // Standby Backup Escalation Logic
+      const backupVolunteer = session.volunteerAttendances.find(
+        (a) => a.rsvpStatus === 'BACKUP' || (a.rsvpStatus === 'PENDING' && a.volunteerId !== volunteer.id)
+      );
+
+      let escalationNotice = '';
+      if (backupVolunteer) {
+        escalationNotice = ` ⚡ Standby escalation triggered: Dispatched WhatsApp ping to backup volunteer (${backupVolunteer.volunteer?.name}) to cover your slot!`;
+      }
+
+      await logSecurityAudit(volunteer.name, 'WHATSAPP_RSVP_ABSENT_ESCALATED', {
         volunteerId: volunteer.id,
-        status: 'ABSENT',
+        backupEscalatedTo: backupVolunteer?.volunteer?.name || 'None',
       });
 
       return NextResponse.json({
-        reply: `Thanks for letting us know, ${volunteer.name}. ❌ Your absence has been logged. Your Center Coordinator has been notified to assign a standby backup.`,
+        reply: `Thanks for letting us know, ${volunteer.name}. ❌ Your absence has been logged.${escalationNotice}`,
         updatedRsvp: 'ABSENT',
+        backupEscalated: backupVolunteer ? backupVolunteer.volunteer?.name : null,
       });
     }
 
-    // 2. Process Check-In Action
+    // 3. Check-In Action
     if (action === 'CHECK_IN') {
       if (attendance) {
         await prisma.volunteerAttendance.update({
@@ -139,7 +146,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // 3. Process Text Notes or Commands
+    // 4. Text Notes or Commands
     if (action === 'LOG_NOTES' || textContent) {
       if (textContent?.startsWith('/status')) {
         const attendingCount = session.volunteerAttendances.filter((a) => a.rsvpStatus === 'ATTENDING').length;

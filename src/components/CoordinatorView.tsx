@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Calendar, UserCheck, Check, X, AlertCircle, Plus, BookOpen, Users, CheckCircle2, Palmtree, Smartphone, Send } from 'lucide-react';
+import { Calendar, UserCheck, Check, X, AlertCircle, Plus, BookOpen, Users, CheckCircle2, Palmtree, Smartphone, Send, FileSpreadsheet, AlertTriangle } from 'lucide-react';
 
 interface CoordinatorViewProps {
   data: any;
@@ -26,6 +26,9 @@ export default function CoordinatorView({ data, sessions, volunteers, onRefresh,
   const [challenges, setChallenges] = useState(upcomingSession?.challengesFaced || '');
   const [loggingReport, setLoggingReport] = useState(false);
 
+  // CSV Import & Emergency Broadcast Modal states
+  const [showCSVModal, setShowCSVModal] = useState(false);
+  const [csvText, setCsvText] = useState('Name, Email, Phone, Skills\nRahul, rahul@example.com, +91 98765 11111, Math\nSneha, sneha@example.com, +91 98765 22222, English');
   const [broadcastStatus, setBroadcastStatus] = useState<string | null>(null);
 
   const handleToggleHolidayPause = async () => {
@@ -45,21 +48,24 @@ export default function CoordinatorView({ data, sessions, volunteers, onRefresh,
     }
   };
 
-  const handleTriggerWABroadcast = async () => {
+  const handleTriggerWABroadcast = async (type: string = 'RSVP') => {
     if (!currentCenter) return;
-    setBroadcastStatus('Sending...');
+    setBroadcastStatus('Processing broadcast...');
     try {
       const res = await fetch('/api/whatsapp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           centerId: currentCenter.id,
-          type: 'RSVP',
+          type,
+          reason: type === 'EMERGENCY_CANCEL' ? 'Heavy Rainfall & Flooding' : undefined,
         }),
       });
       const resData = await res.json();
       if (resData.status === 'SKIPPED_HOLIDAY') {
         setBroadcastStatus(`⏸️ Skipped: ${resData.message}`);
+      } else if (type === 'EMERGENCY_CANCEL') {
+        setBroadcastStatus(`🚨 Emergency Cancellation alert broadcasted to ${resData.recipientCount} volunteers!`);
       } else {
         setBroadcastStatus(`✅ Sent automated WhatsApp RSVPs to ${resData.recipientCount} rostered volunteers!`);
       }
@@ -67,6 +73,28 @@ export default function CoordinatorView({ data, sessions, volunteers, onRefresh,
     } catch (e) {
       console.error(e);
       setBroadcastStatus('Failed to send broadcast');
+    }
+  };
+
+  const handleCSVImport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/volunteers/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          csvData: csvText,
+          centerId: currentCenter?.id,
+        }),
+      });
+      const data = await res.json();
+      if (data.status === 'SUCCESS') {
+        setBroadcastStatus(`📥 ${data.message}`);
+        setShowCSVModal(false);
+        onRefresh();
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -156,42 +184,62 @@ export default function CoordinatorView({ data, sessions, volunteers, onRefresh,
           </p>
         </div>
 
-        {/* Center Controls & WhatsApp Automation */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+        {/* Center Controls & Automation */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           <select
             className="form-input"
             value={selectedCenterId}
             onChange={(e) => setSelectedCenterId(e.target.value)}
-            style={{ minWidth: '180px' }}
+            style={{ minWidth: '160px' }}
           >
             {centers.map((c: any) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
 
+          {/* Bulk CSV Upload Button */}
+          <button className="btn btn-secondary" onClick={() => setShowCSVModal(true)} style={{ padding: '8px 12px', fontSize: '0.82rem' }}>
+            <FileSpreadsheet size={15} /> Import CSV
+          </button>
+
           {/* Holiday Pause Toggle */}
           <button
             onClick={handleToggleHolidayPause}
             className={`btn ${currentCenter?.isPausedForHoliday ? 'btn-emerald' : 'btn-secondary'}`}
-            style={{ padding: '8px 14px', fontSize: '0.82rem' }}
+            style={{ padding: '8px 12px', fontSize: '0.82rem' }}
           >
-            <Palmtree size={16} />
-            {currentCenter?.isPausedForHoliday ? 'Resume WhatsApp RSVPs' : 'Pause RSVPs for Holiday'}
+            <Palmtree size={15} />
+            {currentCenter?.isPausedForHoliday ? 'Resume RSVPs' : 'Pause for Holiday'}
           </button>
 
           {/* Trigger WhatsApp Broadcast */}
           <button
-            onClick={handleTriggerWABroadcast}
+            onClick={() => handleTriggerWABroadcast('RSVP')}
             className="btn"
             style={{
               background: 'rgba(37, 211, 102, 0.2)',
               border: '1px solid #25d366',
               color: '#25d366',
-              padding: '8px 14px',
+              padding: '8px 12px',
               fontSize: '0.82rem'
             }}
           >
-            <Send size={14} /> Send WhatsApp RSVPs
+            <Send size={14} /> Send RSVPs
+          </button>
+
+          {/* Emergency Session Cancellation */}
+          <button
+            onClick={() => handleTriggerWABroadcast('EMERGENCY_CANCEL')}
+            className="btn"
+            style={{
+              background: 'rgba(244, 63, 94, 0.15)',
+              border: '1px solid #f43f5e',
+              color: '#fb7185',
+              padding: '8px 12px',
+              fontSize: '0.82rem'
+            }}
+          >
+            <AlertTriangle size={14} /> Emergency Cancel
           </button>
         </div>
       </div>
@@ -199,8 +247,8 @@ export default function CoordinatorView({ data, sessions, volunteers, onRefresh,
       {/* Broadcast Status Notification Banner */}
       {broadcastStatus && (
         <div style={{
-          background: broadcastStatus.includes('Skipped') ? 'rgba(245, 158, 11, 0.15)' : 'rgba(37, 211, 102, 0.15)',
-          border: broadcastStatus.includes('Skipped') ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid rgba(37, 211, 102, 0.4)',
+          background: broadcastStatus.includes('Skipped') ? 'rgba(245, 158, 11, 0.15)' : broadcastStatus.includes('Emergency') ? 'rgba(244, 63, 94, 0.15)' : 'rgba(37, 211, 102, 0.15)',
+          border: broadcastStatus.includes('Skipped') ? '1px solid rgba(245, 158, 11, 0.4)' : broadcastStatus.includes('Emergency') ? '1px solid rgba(244, 63, 94, 0.4)' : '1px solid rgba(37, 211, 102, 0.4)',
           padding: '12px 18px',
           borderRadius: '12px',
           fontSize: '0.88rem',
@@ -398,6 +446,47 @@ export default function CoordinatorView({ data, sessions, volunteers, onRefresh,
         </div>
 
       </div>
+
+      {/* CSV Roster Upload Modal */}
+      {showCSVModal && (
+        <div className="modal-overlay" onClick={() => setShowCSVModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FileSpreadsheet size={20} color="#10b981" />
+                <h3 style={{ fontSize: '1.2rem', margin: 0 }}>Bulk Import Volunteer Roster (CSV)</h3>
+              </div>
+              <button onClick={() => setShowCSVModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCSVImport} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                  Paste CSV Data (Name, Email, Phone, Skills)
+                </label>
+                <textarea
+                  className="form-input"
+                  rows={6}
+                  value={csvText}
+                  onChange={(e) => setCsvText(e.target.value)}
+                  style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button type="submit" className="btn btn-emerald" style={{ flex: 1, justifyContent: 'center' }}>
+                  Upload & Import to {currentCenter?.name}
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowCSVModal(false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

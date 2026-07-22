@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logSecurityAudit } from '@/lib/security';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const { centerId, type } = await req.json();
+    const { centerId, type, reason } = await req.json();
 
     const center = await prisma.center.findUnique({
       where: { id: centerId },
@@ -16,7 +19,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Center not found' }, { status: 404 });
     }
 
-    // 1. Check Holiday Pause Flag
+    // 1. Emergency Session Cancellation Broadcast
+    if (type === 'EMERGENCY_CANCEL') {
+      const session = await prisma.session.findFirst({
+        where: { centerId, status: 'UPCOMING' },
+      });
+
+      if (session) {
+        await prisma.session.update({
+          where: { id: session.id },
+          data: { status: 'CANCELLED', challengesFaced: `Cancelled: ${reason || 'Weather / Center Emergency'}` },
+        });
+      }
+
+      await logSecurityAudit('COORDINATOR', 'EMERGENCY_SESSION_CANCEL', {
+        centerId,
+        centerName: center.name,
+        reason: reason || 'Weather / Emergency',
+      });
+
+      return NextResponse.json({
+        status: 'SUCCESS',
+        type: 'EMERGENCY_CANCEL',
+        recipientCount: center.volunteers.length,
+        sampleMessage: `🚨 EMERGENCY ALERT: Session at ${center.name} has been CANCELLED (${reason || 'Weather/Emergency'}). Please do NOT report to center.`,
+      });
+    }
+
+    // 2. Check Holiday Pause Flag
     if (center.isPausedForHoliday) {
       return NextResponse.json({
         status: 'SKIPPED_HOLIDAY',
@@ -24,7 +54,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. Fetch or create upcoming session for this weekend
+    // 3. Fetch or create upcoming session for this weekend
     let session = await prisma.session.findFirst({
       where: { centerId, status: 'UPCOMING' },
       include: { volunteerAttendances: true },
