@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logSecurityAudit } from '@/lib/security';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,8 @@ export async function POST(req: Request) {
       },
     });
 
+    await logSecurityAudit('ADMIN', 'CREATE_CENTER', { centerName: name });
+
     return NextResponse.json(newCenter, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -59,6 +62,14 @@ export async function PATCH(req: Request) {
         ...(isPausedForHoliday !== undefined && { isPausedForHoliday }),
       },
     });
+
+    if (isPausedForHoliday !== undefined) {
+      await logSecurityAudit('COORDINATOR', 'TOGGLE_HOLIDAY_PAUSE', {
+        centerId: id,
+        centerName: updated.name,
+        isPausedForHoliday,
+      });
+    }
 
     return NextResponse.json(updated);
   } catch (error: any) {

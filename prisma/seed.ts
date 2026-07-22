@@ -3,9 +3,10 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seeding Volunteer OS database with updated roles & names...');
+  console.log('Seeding Volunteer OS database with security & DPDP compliance updates...');
 
   // Clean existing database
+  await prisma.auditLog.deleteMany();
   await prisma.studentAttendance.deleteMany();
   await prisma.volunteerAttendance.deleteMany();
   await prisma.session.deleteMany();
@@ -74,7 +75,7 @@ async function main() {
     },
   });
 
-  // 4. Create Volunteers with Updated Names (Gomesh as Field Volunteer, Navin D as Chapter Leader)
+  // 4. Create Volunteers (Gomesh as Field Volunteer, Ashwin as Coordinator, Navin D as Chapter Leader)
   const ashwin = await prisma.volunteer.create({
     data: {
       name: 'Ashwin C',
@@ -159,18 +160,13 @@ async function main() {
     },
   });
 
-  // 5. Create Students for Vihana
-  const studentNames = [
-    'Aarav Kumar', 'Diya Patel', 'Kavya Singh', 'Rohan Verma',
-    'Ishaan Reddy', 'Ananya Sharma', 'Aditya Joshi', 'Meera Rao',
-    'Yash Deshmukh', 'Sanya Iyer', 'Vikram Malhotra', 'Tanvi Kulkarni'
-  ];
-
+  // 5. Create Anonymized Student Codes (DPDP Act 2023 Minor Privacy Compliance)
   const students = [];
-  for (let i = 0; i < studentNames.length; i++) {
+  for (let i = 1; i <= 12; i++) {
+    const code = `Student VHN-${i.toString().padStart(2, '0')}`;
     const s = await prisma.student.create({
       data: {
-        name: studentNames[i],
+        studentCode: code,
         grade: `Grade ${5 + (i % 4)}`,
         centerId: vihana.id,
       },
@@ -227,7 +223,6 @@ async function main() {
   // 7. Create Attendances
   const vihanaVolunteers = [ashwin, gomesh, priya, sneha, arjun];
 
-  // Past session 1 attendances
   for (const vol of vihanaVolunteers) {
     await prisma.volunteerAttendance.create({
       data: {
@@ -241,7 +236,6 @@ async function main() {
     });
   }
 
-  // Past session 2 attendances
   for (const vol of vihanaVolunteers) {
     await prisma.volunteerAttendance.create({
       data: {
@@ -254,7 +248,6 @@ async function main() {
     });
   }
 
-  // Upcoming session RSVP
   await prisma.volunteerAttendance.create({
     data: { sessionId: upcomingSession.id, volunteerId: ashwin.id, rsvpStatus: 'ATTENDING' },
   });
@@ -271,7 +264,16 @@ async function main() {
     data: { sessionId: upcomingSession.id, volunteerId: arjun.id, rsvpStatus: 'PENDING' },
   });
 
-  console.log('Database seeded with Gomesh and Navin D (Chapter Leader) successfully!');
+  // Create audit log entry
+  await prisma.auditLog.create({
+    data: {
+      actorName: 'System Seeder',
+      action: 'SYSTEM_INIT',
+      details: 'Initialized database with anonymized DPDP Act student codes and AuditLog table.',
+    },
+  });
+
+  console.log('Database seeded with DPDP privacy compliance & security audit logging!');
 }
 
 main()

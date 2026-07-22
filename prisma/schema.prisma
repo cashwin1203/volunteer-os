@@ -49,7 +49,7 @@ model Volunteer {
   email             String                @unique
   phone             String
   whatsappPhone     String?
-  role              String                @default("VOLUNTEER") // ADMIN, COORDINATOR, VOLUNTEER
+  role              String                @default("VOLUNTEER") // CHAPTER_LEADER, COORDINATOR, VOLUNTEER
   status            String                @default("ACTIVE")    // ACTIVE, AT_RISK, INACTIVE
   skills            String                // Comma separated e.g. "Math, English, Science"
   joinedDate        DateTime              @default(now())
@@ -61,9 +61,10 @@ model Volunteer {
   updatedAt         DateTime              @updatedAt
 }
 
+// DPDP Act 2023 Compliant Student Model (Uses Anonymized Locus IDs for minor PII privacy)
 model Student {
   id          String              @id @default(uuid())
-  name        String
+  studentCode String              // e.g. "Student VHN-01" (Anonymized identifier)
   grade       String              // e.g. "Grade 6"
   centerId    String
   center      Center              @relation(fields: [centerId], references: [id])
@@ -118,4 +119,14 @@ model StudentAttendance {
   updatedAt DateTime @updatedAt
 
   @@unique([sessionId, studentId])
+}
+
+// Immutable Audit Log Model for Compliance & Security Monitoring
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String?  // ID of user or system performing the action
+  actorName String?  // Name or service tag
+  action    String   // e.g., "TOGGLE_HOLIDAY_PAUSE", "UPDATE_ATTENDANCE"
+  details   String   // JSON string of changes
+  createdAt DateTime @default(now())
 }

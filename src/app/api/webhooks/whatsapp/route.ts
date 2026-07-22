@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyWhatsAppSignature, logSecurityAudit } from '@/lib/security';
+
+export const dynamic = 'force-dynamic';
 
 // Meta Verification challenge for webhook setup
 export async function GET(req: Request) {
@@ -15,14 +18,26 @@ export async function GET(req: Request) {
   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 }
 
-// POST Webhook handler (Meta WhatsApp Cloud API payload or Simulator payload)
+// POST Webhook handler with HMAC SHA-256 signature verification and audit logging
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const rawBody = await req.text();
+    const signatureHeader = req.headers.get('x-hub-signature-256');
+
+    // HMAC Signature Security Verification
+    const isValidSignature = verifyWhatsAppSignature(rawBody, signatureHeader);
+    if (!isValidSignature) {
+      await logSecurityAudit('UNAUTHORIZED_WEBHOOK_CALLER', 'WEBHOOK_SIGNATURE_FAILED', {
+        ip: req.headers.get('x-forwarded-for') || 'unknown',
+      });
+      return NextResponse.json({ error: 'Unauthorized: Invalid Signature' }, { status: 401 });
+    }
+
+    const body = JSON.parse(rawBody);
 
     // Extract message fields
     const volunteerId = body.volunteerId;
-    const action = body.action; // 'RSVP_ATTENDING', 'RSVP_ABSENT', 'CHECK_IN', 'LOG_NOTES', 'COMMAND_STATUS'
+    const action = body.action;
     const textContent = body.text;
 
     // Find active volunteer
@@ -35,7 +50,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ reply: 'Sorry, your WhatsApp number is not registered in Volunteer OS.' });
     }
 
-    // Find upcoming or active session for center
+    // Find active session
     const session = await prisma.session.findFirst({
       where: { centerId: volunteer.centerId || '', status: { in: ['UPCOMING', 'COMPLETED'] } },
       orderBy: { sessionDate: 'desc' },
@@ -56,6 +71,12 @@ export async function POST(req: Request) {
           data: { rsvpStatus: 'ATTENDING', botState: 'IDLE' },
         });
       }
+
+      await logSecurityAudit(volunteer.name, 'WHATSAPP_RSVP_CONFIRMED', {
+        volunteerId: volunteer.id,
+        status: 'ATTENDING',
+      });
+
       return NextResponse.json({
         reply: `Awesome, ${volunteer.name}! ✅ Your RSVP for Saturday (${volunteer.center?.slotTime}) at ${volunteer.center?.name} is confirmed. See you there!`,
         updatedRsvp: 'ATTENDING',
@@ -69,6 +90,12 @@ export async function POST(req: Request) {
           data: { rsvpStatus: 'ABSENT', botState: 'IDLE' },
         });
       }
+
+      await logSecurityAudit(volunteer.name, 'WHATSAPP_RSVP_ABSENT', {
+        volunteerId: volunteer.id,
+        status: 'ABSENT',
+      });
+
       return NextResponse.json({
         reply: `Thanks for letting us know, ${volunteer.name}. ❌ Your absence has been logged. Your Center Coordinator has been notified to assign a standby backup.`,
         updatedRsvp: 'ABSENT',
@@ -83,26 +110,31 @@ export async function POST(req: Request) {
           data: { checkInStatus: 'PRESENT', hoursLogged: 3.0, botState: 'AWAITING_NOTES' },
         });
 
-        // Recalculate volunteer hours
         const total = await prisma.volunteerAttendance.aggregate({
           where: { volunteerId: volunteer.id, checkInStatus: 'PRESENT' },
           _sum: { hoursLogged: true },
         });
+
         await prisma.volunteer.update({
           where: { id: volunteer.id },
           data: { totalHours: total._sum.hoursLogged || 0 },
         });
       }
+
+      await logSecurityAudit(volunteer.name, 'WHATSAPP_FIELD_CHECKIN', {
+        volunteerId: volunteer.id,
+        hoursLogged: 3.0,
+      });
+
       return NextResponse.json({
         reply: `📍 Check-in verified at ${volunteer.center?.name}! +3.0 volunteer hours added to your profile (Total: ${(volunteer.totalHours || 0) + 3} hrs). Enjoy teaching today! 📚`,
         updatedCheckIn: 'PRESENT',
       });
     }
 
-    // 3. Process Text Session Notes or Commands
+    // 3. Process Text Notes or Commands
     if (action === 'LOG_NOTES' || textContent) {
       if (textContent?.startsWith('/status')) {
-        // Coordinator Command
         const attendingCount = session.volunteerAttendances.filter((a) => a.rsvpStatus === 'ATTENDING').length;
         const totalRoster = session.volunteerAttendances.length;
         return NextResponse.json({
@@ -110,13 +142,17 @@ export async function POST(req: Request) {
         });
       }
 
-      // Save Session Note
       await prisma.session.update({
         where: { id: session.id },
         data: {
           topicCovered: textContent,
           activitiesCompleted: 'Submitted via WhatsApp Bot',
         },
+      });
+
+      await logSecurityAudit(volunteer.name, 'WHATSAPP_LOGGED_NOTES', {
+        volunteerId: volunteer.id,
+        topic: textContent,
       });
 
       return NextResponse.json({
