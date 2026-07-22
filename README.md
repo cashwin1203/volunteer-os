@@ -1,41 +1,119 @@
 # Volunteer OS
 
-**The Operating System for Volunteer-Led NGO Learning Centers**
+**A Full-Stack Operational Management Platform & Conversational Engine for NGO Learning Centers**
 
-Volunteer OS is an end-to-end operational platform built for education-focused NGOs (inspired by U&I India). It replaces fragmented WhatsApp chats, paper sign-ins, and spreadsheets with an automated **WhatsApp Conversational Bot**, **Center Coordinator Console**, and **Chapter Leader Executive Dashboard**.
-
----
-
-## Features
-
-- **WhatsApp Conversational Bot:**
-  - Automated Friday RSVP pings with 1-tap buttons (`[ Attending ]`, `[ Request Absence ]`, `[ Standby Backup ]`).
-  - 1-tap Saturday center check-in (`[ Check In Now ]`).
-  - Conversational text session logging.
-  - Text `/status` for instant center roster attendance.
-- **Center Coordinator Console:**
-  - 1-click **"Pause RSVPs for Holiday"** toggle to suspend automated alerts during vacation weeks.
-  - Real-time Saturday slot roster management.
-  - Educational logbook & student support tracker.
-- **Chapter Leader Executive Dashboard:**
-  - Real-time active volunteer retention radar across city centers (Vihana, Mala, Ramamurthynagar).
-  - Retention Risk Watchlist (flags volunteers missing 2+ consecutive sessions).
-  - **AI Impact Copilot:** Generates executive impact reports for corporate CSR & donor grants.
-- **Interactive WhatsApp Web Simulator:**
-  - Live in-app mobile phone mockup for instant browser testing without Meta API keys.
+[![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-5.22-2D3748?style=flat-square&logo=prisma)](https://www.prisma.io/)
+[![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?style=flat-square&logo=sqlite)](https://www.sqlite.org/)
 
 ---
 
-## Tech Stack
+## Overview
 
-- **Framework:** Next.js 14 (App Router) + TypeScript
-- **Database & ORM:** SQLite with Prisma ORM
-- **API & Webhooks:** Next.js Dynamic Route Handlers (`/api/webhooks/whatsapp`, `/api/whatsapp/send`, `/api/dashboard`, `/api/centers`, `/api/sessions`)
-- **Styling:** Custom Vanilla CSS with modern dark-mode glassmorphism
+Volunteer OS is a full-stack enterprise operating system designed to manage the operational lifecycle of volunteer-led education centers (inspired by U&I India). 
+
+While traditional NGO software focuses primarily on donor fundraising or upfront volunteer recruitment ATS pipelines, Volunteer OS addresses the post-onboarding operational layer: automating weekly roster RSVPs, field check-ins, educational session logging, and chapter retention analytics.
 
 ---
 
-## Quick Start
+## Architecture & System Design
+
+Volunteer OS combines an event-driven API layer with a relational database model and interactive client dashboards.
+
+```
+                                  +---------------------------------------+
+                                  |        WhatsApp Cloud API /           |
+                                  |     In-App WhatsApp Simulator         |
+                                  +---------------------------------------+
+                                                      |
+                                                      v
+                                  +---------------------------------------+
+                                  |     Next.js Webhook Controller        |
+                                  |    (/api/webhooks/whatsapp/route.ts)  |
+                                  +---------------------------------------+
+                                                      |
+                                                      v
+                                  +---------------------------------------+
+                                  |    Conversational Bot State Machine    |
+                                  |   (RSVP, Check-In, Session Logging)   |
+                                  +---------------------------------------+
+                                                      |
+                                                      v
+                                  +---------------------------------------+
+                                  |        Prisma ORM & SQLite DB         |
+                                  |  (Centers, Volunteers, Sessions, etc) |
+                                  +---------------------------------------+
+                                                      |
+               +--------------------------------------+--------------------------------------+
+               |                                                                             |
+               v                                                                             v
++---------------------------------------------+                               +---------------------------------------------+
+|        Coordinator Console Engine           |                               |      Chapter Leader Analytics Dashboard     |
+|   (Roster Management & Holiday Pauses)      |                               |      (Retention Watchlist & AI Copilot)     |
++---------------------------------------------+                               +---------------------------------------------+
+```
+
+---
+
+## Core System Pillars
+
+### 1. WhatsApp Conversational Automation Engine
+- **Automated Friday RSVP Loop:** Proactively dispatches interactive button pings (`[ Attending ]`, `[ Request Absence ]`, `[ Standby Backup ]`) to rostered volunteers.
+- **Field Check-In System:** Verifies physical arrival on Saturday afternoons and auto-calculates logged volunteer contribution hours.
+- **Conversational Session Logging:** Captures session topics and student observations directly from WhatsApp message payloads.
+- **Coordinator Text Commands:** Allows coordinators to query center status by sending `/status` directly to the bot.
+- **In-App Web Simulator:** Integrated smartphone mockup for instant browser-based workflow validation.
+
+### 2. Center Coordinator Console
+- **Holiday Exception Controls:** One-click toggle (`isPausedForHoliday`) to suspend automated Friday broadcasts during vacation weeks.
+- **Roster & Backup Allocation:** Real-time visibility into weekly session staffing ratios with quick backup assignment.
+- **Educational Progress Logbook:** Tracks topics taught, group activities, and flags students requiring targeted academic support.
+
+### 3. Chapter Leader Analytics Dashboard
+- **Retention Risk Watchlist:** Algorithms automatically flag volunteers missing two or more consecutive sessions to prevent churn.
+- **Chapter-Wide Metrics:** Real-time aggregation of active volunteers, total verified hours, student reach, and session completion rates.
+- **AI Impact Copilot:** Synthesizes field logs into structured donor grant summaries.
+
+---
+
+## API Reference & Endpoints
+
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/api/dashboard` | `GET` | Aggregates chapter-wide KPIs, active rosters, center capacities, and retention risk list. |
+| `/api/centers` | `GET`, `POST`, `PATCH` | Manages center profiles, target volunteer/student ratios, and holiday pause states. |
+| `/api/volunteers` | `GET`, `POST`, `PATCH` | Handles volunteer onboarding, skill tagging, status updates, and center assignments. |
+| `/api/sessions` | `GET`, `POST`, `PATCH` | Creates upcoming weekend sessions, populates rosters, and updates post-session logs. |
+| `/api/attendance` | `PATCH` | Updates volunteer RSVP statuses, check-in timestamps, verified hours, and student records. |
+| `/api/webhooks/whatsapp` | `GET`, `POST` | Meta WhatsApp Cloud API verification challenge and conversational message handler. |
+| `/api/whatsapp/send` | `POST` | Outbound WhatsApp broadcast dispatcher respecting holiday pause controls. |
+| `/api/ai-summary` | `POST` | AI-assisted executive impact report generator for donor communications. |
+
+---
+
+## Data Model (Prisma Schema)
+
+The core relational database model comprises eight primary entities:
+
+- **Organization:** Root NGO entity (e.g., U&I Trust).
+- **City:** Geographic cluster (e.g., Bangalore, Chennai).
+- **Center:** Individual operational unit with assigned day, slot time, and targets (e.g., Vihana Center).
+- **Volunteer:** User profile containing role (`CHAPTER_LEADER`, `COORDINATOR`, `VOLUNTEER`), status (`ACTIVE`, `AT_RISK`), skills, and total verified hours.
+- **Student:** Student record assigned to a center with grade level.
+- **Session:** Scheduled weekend instance tracking topics, activities, challenges, and completion status.
+- **VolunteerAttendance:** Join model tracking individual RSVP status, check-in status, bot state, and logged hours.
+- **StudentAttendance:** Tracked student presence and learning needs per session.
+
+---
+
+## Local Setup & Installation
+
+### Prerequisites
+- Node.js 18.x or higher
+- npm 9.x or higher
+
+### Installation Steps
 
 1. **Clone the repository:**
    ```bash
@@ -48,30 +126,16 @@ Volunteer OS is an end-to-end operational platform built for education-focused N
    npm install
    ```
 
-3. **Sync database and seed mock data:**
+3. **Initialize and seed the database:**
    ```bash
    npx prisma db push
    npx tsx prisma/seed.ts
    ```
 
-4. **Run development server:**
+4. **Start the development server:**
    ```bash
    npm run dev
    ```
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
 
----
-
-## Documentation
-
-- [Product Requirements Document (PRD)](https://github.com/cashwin1203/volunteer-os)
-- [Product Case Study](https://github.com/cashwin1203/volunteer-os)
-- [User Personas & Journey Maps](https://github.com/cashwin1203/volunteer-os)
-
----
-
-## 100% Free Production Deployment
-
-- **Hosting:** Vercel Hobby Tier (Free)
-- **Database:** Turso Edge SQLite / Supabase (Free Tier)
-- **WhatsApp API:** Meta WhatsApp Cloud API (1,000 free conversations/month)
+5. **Access the application:**
+   Navigate to `http://localhost:3000` in your browser.
