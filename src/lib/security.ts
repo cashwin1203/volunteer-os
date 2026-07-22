@@ -5,7 +5,6 @@ import { prisma } from './prisma';
  * Validates Meta WhatsApp Webhook HMAC-SHA256 Signatures
  */
 export function verifyWhatsAppSignature(rawBody: string, signatureHeader: string | null): boolean {
-  // Allow local in-app simulator requests
   if (!signatureHeader && process.env.NODE_ENV !== 'production') {
     return true;
   }
@@ -36,7 +35,7 @@ export function maskVolunteerPII(volunteer: any) {
     ...volunteer,
     phone: volunteer.phone ? volunteer.phone.replace(/(\+\d{2}\s?\d{2})\d{5}(\d{3})/, '$1*****$2') : null,
     whatsappPhone: volunteer.whatsappPhone ? volunteer.whatsappPhone.replace(/(\+\d{2}\s?\d{2})\d{5}(\d{3})/, '$1*****$2') : null,
-    email: volunteer.email ? volunteer.email.replace(/(.{2})(.*)(?=@)/, (g1, g2, g3) => g2 + '*'.repeat(g3.length)) : null,
+    email: volunteer.email ? volunteer.email.replace(/(.{2})(.*)(?=@)/, (_: string, g2: string, g3: string) => g2 + '*'.repeat(g3.length)) : null,
   };
 }
 
@@ -46,7 +45,7 @@ export function maskVolunteerPII(volunteer: any) {
 export function sanitizeInputText(input: string | null | undefined, maxLength: number = 1000): string {
   if (!input) return '';
   return input
-    .replace(/[<>]/g, '') // Strip XML/HTML tags
+    .replace(/[<>]/g, '')
     .slice(0, maxLength)
     .trim();
 }
