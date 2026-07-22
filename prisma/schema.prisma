@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  cities    City[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model City {
+  id             String       @id @default(uuid())
+  name           String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  centers        Center[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Center {
+  id                  String      @id @default(uuid())
+  name                String
+  location            String
+  dayOfWeek           String      // e.g. "Saturday"
+  slotTime            String      // e.g. "2:30 PM - 5:30 PM"
+  cityId              String
+  city                City        @relation(fields: [cityId], references: [id])
+  volunteers          Volunteer[]
+  students            Student[]
+  sessions            Session[]
+  targetStudentCount  Int         @default(40)
+  targetVolunteerCount Int        @default(10)
+  isPausedForHoliday  Boolean     @default(false)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+}
+
+model Volunteer {
+  id                String                @id @default(uuid())
+  name              String
+  email             String                @unique
+  phone             String
+  whatsappPhone     String?
+  role              String                @default("VOLUNTEER") // ADMIN, COORDINATOR, VOLUNTEER
+  status            String                @default("ACTIVE")    // ACTIVE, AT_RISK, INACTIVE
+  skills            String                // Comma separated e.g. "Math, English, Science"
+  joinedDate        DateTime              @default(now())
+  totalHours        Float                 @default(0)
+  centerId          String?
+  center            Center?               @relation(fields: [centerId], references: [id])
+  attendances       VolunteerAttendance[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+}
+
+model Student {
+  id          String              @id @default(uuid())
+  name        String
+  grade       String              // e.g. "Grade 6"
+  centerId    String
+  center      Center              @relation(fields: [centerId], references: [id])
+  attendances StudentAttendance[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model Session {
+  id                   String                @id @default(uuid())
+  centerId             String
+  center               Center                @relation(fields: [centerId], references: [id])
+  sessionDate          DateTime
+  startTime            String                // e.g. "14:30"
+  endTime              String                // e.g. "17:30"
+  status               String                @default("UPCOMING") // UPCOMING, COMPLETED, CANCELLED
+  topicCovered         String?
+  activitiesCompleted  String?
+  challengesFaced      String?
+  volunteerAttendances VolunteerAttendance[]
+  studentAttendances   StudentAttendance[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+}
+
+model VolunteerAttendance {
+  id            String    @id @default(uuid())
+  sessionId     String
+  session       Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  volunteerId   String
+  volunteer     Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  rsvpStatus    String    @default("PENDING") // PENDING, ATTENDING, ABSENT, BACKUP
+  checkInStatus String    @default("PENDING") // PENDING, PRESENT, ABSENT, LATE
+  botState      String    @default("IDLE")    // IDLE, AWAITING_RSVP, AWAITING_CHECKIN, AWAITING_NOTES
+  hoursLogged   Float     @default(0)
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([sessionId, volunteerId])
+}
+
+model StudentAttendance {
+  id        String   @id @default(uuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status    String   @default("PRESENT") // PRESENT, ABSENT, NEEDS_HELP
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, studentId])
+}
