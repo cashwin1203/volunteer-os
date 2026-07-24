@@ -140,8 +140,8 @@ export default function Header({ currentRole, onRoleChange, onOpenWASimulator, d
                 outline: 'none',
               }}
             >
-              <option value="CHAPTER_LEADER" style={{ background: '#100a0a' }}>Navin D (Chapter Leader)</option>
-              <option value="COORDINATOR" style={{ background: '#100a0a' }}>Ashwin C (Coordinator)</option>
+              <option value="CHAPTER_LEADER" style={{ background: '#100a0a' }}>Navin D & Sathya (Chapter Leaders)</option>
+              <option value="COORDINATOR" style={{ background: '#100a0a' }}>Ashwin C, Nishant & Rohit (Centre Leaders)</option>
               <option value="VOLUNTEER" style={{ background: '#100a0a' }}>Gomesh (Field Volunteer)</option>
             </select>
           </div>

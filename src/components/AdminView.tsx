@@ -58,7 +58,7 @@ export default function AdminView({ data, onRefresh }: AdminViewProps) {
       <div className="glass-panel" style={{ padding: '24px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.08) 100%)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h2 style={{ fontSize: '1.4rem', marginBottom: '6px' }}>Chapter Leader Operations Dashboard (Navin D)</h2>
+            <h2 style={{ fontSize: '1.4rem', marginBottom: '6px' }}>Chapter Leader Operations Dashboard (Navin D & Sathya)</h2>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
               Real-time monitoring of center capacity, volunteer retention, and student educational reach across Bangalore.
             </p>

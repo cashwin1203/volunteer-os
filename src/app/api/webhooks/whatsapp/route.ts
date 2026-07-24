@@ -110,7 +110,7 @@ export async function POST(req: Request) {
       });
 
       return NextResponse.json({
-        reply: `Thanks for letting us know, ${volunteer.name}. ❌ Your absence has been logged.${escalationNotice}`,
+        reply: `Thanks for letting us know, ${volunteer.name}. ❌ Your absence has been logged. Your Centre Leader has been notified to assign a standby backup.`,
         updatedRsvp: 'ABSENT',
         backupEscalated: backupVolunteer ? backupVolunteer.volunteer?.name : null,
       });

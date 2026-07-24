@@ -167,7 +167,7 @@ export default function CoordinatorView({ data, sessions, volunteers, onRefresh,
       <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Center Coordinator Console
+            Centre Leader Console
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h2 style={{ fontSize: '1.3rem', margin: 0 }}>

@@ -75,7 +75,7 @@ async function main() {
     },
   });
 
-  // 4. Create Volunteers (Gomesh as Field Volunteer, Ashwin as Coordinator, Navin D as Chapter Leader)
+  // 4. Create Volunteers & Leaders (Gomesh as Field Volunteer, Ashwin C, Nishant, Rohit as Centre Leaders, Navin D & Sathya as Chapter Leaders)
   const ashwin = await prisma.volunteer.create({
     data: {
       name: 'Ashwin C',
@@ -87,6 +87,34 @@ async function main() {
       skills: 'Center Operations, Leadership, Mathematics',
       totalHours: 142,
       centerId: vihana.id,
+    },
+  });
+
+  const nishant = await prisma.volunteer.create({
+    data: {
+      name: 'Nishant',
+      email: 'nishant@uandi.org',
+      phone: '+91 98765 43211',
+      whatsappPhone: '+91 98765 43211',
+      role: 'COORDINATOR',
+      status: 'ACTIVE',
+      skills: 'Center Management, Mentorship, Science',
+      totalHours: 128,
+      centerId: mala.id,
+    },
+  });
+
+  const rohit = await prisma.volunteer.create({
+    data: {
+      name: 'Rohit',
+      email: 'rohit@uandi.org',
+      phone: '+91 98765 43212',
+      whatsappPhone: '+91 98765 43212',
+      role: 'COORDINATOR',
+      status: 'ACTIVE',
+      skills: 'Student Engagement, Operations, English',
+      totalHours: 115,
+      centerId: ramamurthy.id,
     },
   });
 
@@ -157,6 +185,20 @@ async function main() {
       skills: 'Chapter Governance, Program Strategy',
       totalHours: 210,
       centerId: mala.id,
+    },
+  });
+
+  const sathya = await prisma.volunteer.create({
+    data: {
+      name: 'Sathya',
+      email: 'sathya@uandi.org',
+      phone: '+91 94321 09877',
+      whatsappPhone: '+91 94321 09877',
+      role: 'CHAPTER_LEADER',
+      status: 'ACTIVE',
+      skills: 'Chapter Governance, Volunteer Operations',
+      totalHours: 195,
+      centerId: vihana.id,
     },
   });
 
