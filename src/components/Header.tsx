@@ -1,144 +1,163 @@
 'use client';
 
-import React from 'react';
-import { Layers, Shield, UserCheck, Users, MapPin, Sparkles, Smartphone } from 'lucide-react';
+import React, { useState } from 'react';
+import { UserCheck, Sparkles, Smartphone, Rocket } from 'lucide-react';
+import AISummaryModal from './AISummaryModal';
+import LaunchActivityModal from './LaunchActivityModal';
 
 interface HeaderProps {
-  activeRole: 'ADMIN' | 'COORDINATOR' | 'VOLUNTEER';
-  setActiveRole: (role: 'ADMIN' | 'COORDINATOR' | 'VOLUNTEER') => void;
-  onOpenAISummary?: () => void;
+  currentRole: 'CHAPTER_LEADER' | 'COORDINATOR' | 'VOLUNTEER';
+  onRoleChange: (role: 'CHAPTER_LEADER' | 'COORDINATOR' | 'VOLUNTEER') => void;
   onOpenWASimulator?: () => void;
+  data?: any;
 }
 
-export default function Header({ activeRole, setActiveRole, onOpenAISummary, onOpenWASimulator }: HeaderProps) {
+export default function Header({ currentRole, onRoleChange, onOpenWASimulator, data }: HeaderProps) {
+  const [showAICopilot, setShowAICopilot] = useState(false);
+  const [showLaunchHub, setShowLaunchHub] = useState(false);
+
   return (
-    <header className="glass-panel" style={{ padding: '16px 28px', marginBottom: '28px', borderTop: 'none', borderRadius: '0 0 20px 20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        
-        {/* Brand identity */}
+    <>
+      <header
+        className="glass-panel"
+        style={{
+          padding: '14px 24px',
+          marginBottom: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '16px',
+          borderColor: 'rgba(204, 17, 0, 0.20)',
+        }}
+      >
+
+        {/* Brand Identity — U&I Logo + Name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          {/* U&I Logo */}
           <div style={{
-            width: '44px',
-            height: '44px',
+            width: '48px',
+            height: '48px',
             borderRadius: '12px',
-            background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 0 16px rgba(99, 102, 241, 0.4)'
+            overflow: 'hidden',
+            flexShrink: 0,
+            boxShadow: '0 4px 16px rgba(204, 17, 0, 0.40)',
+            border: '1px solid rgba(204, 17, 0, 0.30)',
           }}>
-            <Layers size={24} color="#ffffff" />
+            <img
+              src="/uni-logo.png"
+              alt="U&I India Logo"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
           </div>
+
+          {/* Brand Text */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h1 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Volunteer OS</h1>
-              <span className="badge badge-active" style={{ fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <MapPin size={10} /> U&I Bangalore
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h1 style={{
+                fontSize: '1.35rem',
+                fontWeight: 700,
+                letterSpacing: '-0.02em',
+                margin: 0,
+                background: 'linear-gradient(90deg, #ffffff 0%, #f1a8a0 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}>
+                Volunteer OS
+              </h1>
+              <span
+                className="badge badge-emerald"
+                style={{ fontSize: '0.62rem', letterSpacing: '0.06em' }}
+              >
+                Live
               </span>
             </div>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0 }}>
-              Operating System for Volunteer-Led Education Centers
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0, letterSpacing: '0.01em' }}>
+              U&I India &nbsp;•&nbsp; <span style={{ color: 'rgba(204, 17, 0, 0.85)', fontWeight: 600 }}>Be The Change</span>
             </p>
           </div>
         </div>
 
-        {/* Role Switcher & Action Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          
+        {/* Action Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+
+          {/* 20-Min Launch Games */}
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowLaunchHub(true)}
+            style={{ border: '1px solid rgba(204, 17, 0, 0.30)', color: '#ff6b5b', fontSize: '0.82rem' }}
+          >
+            <Rocket size={15} color="#CC1100" /> Launch Games
+          </button>
+
+          {/* AI Donor Copilot */}
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowAICopilot(true)}
+            style={{ border: '1px solid rgba(255,255,255,0.10)', fontSize: '0.82rem' }}
+          >
+            <Sparkles size={15} color="#fbbf24" /> Donor Copilot
+          </button>
+
+          {/* WhatsApp Simulator */}
           {onOpenWASimulator && (
             <button
               className="btn"
               onClick={onOpenWASimulator}
               style={{
-                background: 'rgba(37, 211, 102, 0.15)',
-                border: '1px solid rgba(37, 211, 102, 0.4)',
+                background: 'rgba(37, 211, 102, 0.12)',
+                border: '1px solid rgba(37, 211, 102, 0.40)',
                 color: '#25d366',
-                padding: '8px 14px',
-                fontSize: '0.85rem'
+                fontSize: '0.82rem',
               }}
             >
-              <Smartphone size={16} /> WhatsApp Bot
+              <Smartphone size={15} /> WhatsApp Bot
             </button>
           )}
 
-          {onOpenAISummary && (
-            <button className="btn btn-secondary" onClick={onOpenAISummary} style={{ padding: '8px 14px', fontSize: '0.85rem' }}>
-              <Sparkles size={16} color="#a855f7" /> AI Impact Copilot
-            </button>
-          )}
-
-          {/* Role Switcher Pills */}
+          {/* Role Switcher */}
           <div style={{
+            background: 'rgba(10, 8, 8, 0.7)',
+            border: '1px solid rgba(204, 17, 0, 0.20)',
+            borderRadius: '10px',
+            padding: '6px 12px',
             display: 'flex',
-            background: 'rgba(15, 23, 42, 0.8)',
-            padding: '4px',
-            borderRadius: '12px',
-            border: '1px solid var(--border-color)'
+            alignItems: 'center',
+            gap: '8px',
           }}>
-            <button
-              onClick={() => setActiveRole('ADMIN')}
+            <UserCheck size={15} color="#CC1100" />
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>View As:</span>
+            <select
+              value={currentRole}
+              onChange={(e) => onRoleChange(e.target.value as any)}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 14px',
-                borderRadius: '8px',
+                background: 'transparent',
                 border: 'none',
-                background: activeRole === 'ADMIN' ? 'var(--accent-primary)' : 'transparent',
-                color: activeRole === 'ADMIN' ? '#fff' : 'var(--text-secondary)',
-                fontSize: '0.82rem',
+                color: '#fff',
                 fontWeight: 600,
+                fontSize: '0.82rem',
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                outline: 'none',
               }}
             >
-              <Shield size={14} /> Chapter Leader (Navin D)
-            </button>
-
-            <button
-              onClick={() => setActiveRole('COORDINATOR')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                background: activeRole === 'COORDINATOR' ? 'var(--accent-primary)' : 'transparent',
-                color: activeRole === 'COORDINATOR' ? '#fff' : 'var(--text-secondary)',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              <UserCheck size={14} /> Center Coordinator
-            </button>
-
-            <button
-              onClick={() => setActiveRole('VOLUNTEER')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                background: activeRole === 'VOLUNTEER' ? 'var(--accent-primary)' : 'transparent',
-                color: activeRole === 'VOLUNTEER' ? '#fff' : 'var(--text-secondary)',
-                fontSize: '0.82rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              <Users size={14} /> Field Volunteer (Gomesh)
-            </button>
+              <option value="CHAPTER_LEADER" style={{ background: '#100a0a' }}>Navin D (Chapter Leader)</option>
+              <option value="COORDINATOR" style={{ background: '#100a0a' }}>Ashwin C (Coordinator)</option>
+              <option value="VOLUNTEER" style={{ background: '#100a0a' }}>Gomesh (Field Volunteer)</option>
+            </select>
           </div>
-
         </div>
+      </header>
 
-      </div>
-    </header>
+      {/* Modals */}
+      <AISummaryModal
+        isOpen={showAICopilot}
+        onClose={() => setShowAICopilot(false)}
+        centerName={data?.centers?.[0]?.name || 'Vihana Center'}
+      />
+      <LaunchActivityModal
+        isOpen={showLaunchHub}
+        onClose={() => setShowLaunchHub(false)}
+      />
+    </>
   );
 }

@@ -18,7 +18,7 @@ export default function MetricCard({
   value,
   subtitle,
   icon: Icon,
-  color = '#6366f1',
+  color = '#CC1100',
   badgeText,
   badgeVariant = 'active',
 }: MetricCardProps) {
