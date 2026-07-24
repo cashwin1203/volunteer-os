@@ -9,7 +9,7 @@ import AISummaryModal from '@/components/AISummaryModal';
 import WhatsAppSimulatorModal from '@/components/WhatsAppSimulatorModal';
 
 export default function Home() {
-  const [activeRole, setActiveRole] = useState<'ADMIN' | 'COORDINATOR' | 'VOLUNTEER'>('ADMIN');
+  const [activeRole, setActiveRole] = useState<'CHAPTER_LEADER' | 'COORDINATOR' | 'VOLUNTEER'>('CHAPTER_LEADER');
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [isWASimulatorOpen, setIsWASimulatorOpen] = useState(false);
 
@@ -49,10 +49,10 @@ export default function Home() {
       
       {/* App Header & Role Switcher */}
       <Header
-        activeRole={activeRole}
-        setActiveRole={setActiveRole}
-        onOpenAISummary={() => setIsAIModalOpen(true)}
+        currentRole={activeRole}
+        onRoleChange={setActiveRole}
         onOpenWASimulator={() => setIsWASimulatorOpen(true)}
+        data={dashboardData}
       />
 
       {loading ? (
@@ -61,7 +61,7 @@ export default function Home() {
         </div>
       ) : (
         <main>
-          {activeRole === 'ADMIN' && (
+          {activeRole === 'CHAPTER_LEADER' && (
             <AdminView data={dashboardData} onRefresh={fetchData} />
           )}
 

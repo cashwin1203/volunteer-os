@@ -113,7 +113,7 @@ export default function LaunchActivityModal({ isOpen, onClose }: LaunchActivityM
                 padding: '16px',
                 display: 'flex',
                 flexDirection: 'column',
-                justify: 'space-between'
+                justifyContent: 'space-between'
               }}
             >
               <div>
